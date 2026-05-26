@@ -1,11 +1,11 @@
-# How to run — Log Analyzer
+# Как запустить — Log Analyzer
 
-## Requirements
+## Требования
 
 - Rust (stable)
-- Bash (for `.sh` generator scripts)
+- Bash (для `.sh`-скриптов генерации логов)
 
-## Build
+## Сборка
 
 ```bash
 cargo build --release
@@ -13,73 +13,73 @@ cargo build --release
 
 ---
 
-## Basic usage
+## Базовое использование
 
 ```bash
-# Single file
+# Один файл
 cargo run -- logs/test.log
 
-# Multiple files
+# Несколько файлов
 cargo run -- logs/test.log logs/test_scenarios/error_spike.log
 
-# With config
+# С конфигом
 cargo run -- -c test_config.json logs/test.log
 
-# With filter (applied before stats — filtered lines never appear in counts)
+# С фильтром (применяется до статистики — отфильтрованные строки не попадают в счётчики)
 cargo run -- --filter "level=ERROR" logs/test.log
 cargo run -- --filter "level=ERROR,keyword=failed,source=auth" logs/test.log
 
-# With N workers
+# С N воркерами
 cargo run -- -w 8 logs/test.log
 ```
 
 ---
 
-## Filter syntax
+## Синтаксис фильтра
 
 `--filter "key=value,key=value,..."`
 
-| Key | Example | Description |
+| Ключ | Пример | Описание |
 |---|---|---|
-| `level` | `level=ERROR` | Match by log level |
-| `keyword` | `keyword=timeout` | Substring match in message |
-| `source` | `source=auth` | Match `service=` param |
+| `level` | `level=ERROR` | Фильтр по уровню лога |
+| `keyword` | `keyword=timeout` | Поиск подстроки в сообщении |
+| `source` | `source=auth` | Фильтр по параметру `service=` |
 
 ---
 
-## Sessions
+## Сессии
 
 ```bash
-# Create session and run
+# Создать сессию и запустить анализ
 cargo run -- -s my_session logs/test.log
 
-# Resume saved session
+# Возобновить сохранённую сессию
 cargo run -- -s my_session
 
-# List sessions
+# Список сессий
 cargo run -- list-sessions
 
-# View session info
+# Информация о сессии
 cargo run -- stats -s my_session
 
-# Delete session
+# Удалить сессию
 cargo run -- remove-session my_session
 ```
 
 ---
 
-## Config files
+## Конфигурационные файлы
 
-Supported formats: **JSON**, **YAML**, **TOML**.
+Поддерживаемые форматы: **JSON**, **YAML**, **TOML**.
 
 ```bash
-# Validate config without running analysis
+# Проверить конфиг без запуска анализа
 cargo run -- load-config -c test_config.json
 cargo run -- load-config -c test_config.yaml
 cargo run -- load-config -c test_config.toml
 ```
 
-### Key config fields
+### Пример конфига
 
 ```json
 {
@@ -102,58 +102,127 @@ cargo run -- load-config -c test_config.toml
 }
 ```
 
-Actions: `count` · `warn` · `report` · `ignore`
+Действия: `count` · `warn` · `report` · `ignore`
+
+### Полное описание полей конфига
+
+#### Блок `rules` — список правил анализа
+
+Каждое правило — это объект со следующими полями:
+
+| Поле | Тип | Обязательное | По умолчанию | Описание |
+|---|---|---|---|---|
+| `name` | string | да | — | Уникальное имя правила. Отображается в итоговом отчёте. |
+| `pattern` | string | да | — | Regex-паттерн для поиска в тексте сообщения. Например: `"ERROR\|CRITICAL"` или `"timeout"`. |
+| `action` | string | нет | `"count"` | Что делать при срабатывании (см. ниже). |
+| `severity` | string | нет | `"info"` | Метка серьёзности: `"info"`, `"warning"`, `"error"`, `"critical"`. Используется в отчёте. |
+| `enabled` | bool | нет | `true` | Включить или выключить правило без удаления из файла. |
+| `threshold` | число | нет | не задан | Минимальное число совпадений за `time_window` секунд, после которого правило срабатывает. Если не задан — правило срабатывает на каждом совпадении. |
+| `time_window` | число (сек) | нет | не задан | Ширина скользящего окна в секундах для счётчика `threshold`. Используется вместе с `threshold`. |
+
+**Значения `action`:**
+
+| Значение | Поведение |
+|---|---|
+| `count` | Молча считает совпадения. Число видно в итоговой статистике. |
+| `warn` | Выводит `WARN` в лог (`RUST_LOG=warn` чтобы увидеть в реальном времени). |
+| `report` | Добавляет совпадение в итоговый отчёт, который печатается по завершении анализа. |
+| `ignore` | Полностью игнорирует строку при совпадении — она не попадает ни в какую статистику. |
+
+**Пример с порогом:** правило ниже сработает только если слово `timeout` встретилось 5 и более раз за 60 секунд:
+
+```json
+{
+  "name": "timeout_burst",
+  "pattern": "timeout",
+  "action": "report",
+  "severity": "error",
+  "threshold": 5,
+  "time_window": 60
+}
+```
 
 ---
 
-## Anomaly detection testing
+#### Блок `settings` — глобальные настройки
 
-Scripts in `logs/` write to `logs/test.log` and trigger a specific anomaly type.
+| Поле | Тип | По умолчанию | Описание |
+|---|---|---|---|
+| `workers` | число | `4` | Количество параллельных потоков-обработчиков. Увеличивайте при большом числе правил или тяжёлых regex. |
+| `buffer_size` | число (байт) | `1024` | Размер буфера чтения файла. Увеличьте до `4096`–`16384` для больших файлов. |
+| `output_format` | string | `"text"` | Формат итогового вывода: `"text"` — читаемый текст, `"json"` — компактный JSON, `"pretty"` — отформатированный JSON. |
+| `anomaly_threshold` | число | `20` | Порог для встроенного детектора аномалий: если одно и то же сообщение повторяется ≥ N раз в скользящем окне 60 с — фиксируется аномалия `RepeatedMessage`; если ошибок ≥ N — `ErrorSpike`; если всего сообщений ≥ N·10 — `MessageFlood`. |
+| `report_dir` | string | не задан | Папка для сохранения отчётов в файл. Если не задан — отчёт только в stdout. |
 
-### Generate and test each anomaly
+**Минимальный рабочий конфиг (JSON):**
+
+```json
+{
+  "rules": [
+    {
+      "name": "errors",
+      "pattern": "ERROR|CRITICAL",
+      "action": "report"
+    }
+  ],
+  "settings": {
+    "workers": 4
+  }
+}
+```
+
+Все остальные поля необязательны и имеют разумные значения по умолчанию.
+
+---
+
+## Тестирование обнаружения аномалий
+
+Скрипты в папке `logs/` записывают данные в `logs/test.log` и воспроизводят конкретный тип аномалии.
+
+### Генерация и тестирование каждой аномалии
 
 ```bash
-# RepeatedMessage — same message 25 times
+# RepeatedMessage — одно и то же сообщение 25 раз
 bash logs/gen_repeated_message.sh
 cargo run -- -c logs/test_scenarios/comprehensive_config.json logs/test.log
 
-# ErrorSpike — 25 different ERROR/CRITICAL lines
+# ErrorSpike — 25 разных строк с уровнем ERROR/CRITICAL
 bash logs/gen_error_spike.sh
 cargo run -- -c logs/test_scenarios/comprehensive_config.json logs/test.log
 
-# MessageFlood — 220 lines total
+# MessageFlood — 220 строк суммарно
 bash logs/gen_message_flood.sh
 cargo run -- -c logs/test_scenarios/comprehensive_config.json logs/test.log
 
-# Generate all three at once (last script wins in logs/test.log)
+# Сгенерировать все три сразу (последний скрипт перезаписывает logs/test.log)
 bash logs/gen_all.sh
 ```
 
-Anomaly thresholds in `comprehensive_config.json`: `anomaly_threshold = 15`, window = 60 s.
+Пороги аномалий в `comprehensive_config.json`: `anomaly_threshold = 15`, окно = 60 с.
 
-| Anomaly | Trigger |
+| Аномалия | Условие срабатывания |
 |---|---|
-| `RepeatedMessage` | Same message ≥ 15 times in 60 s |
-| `ErrorSpike` | ERROR/CRITICAL ≥ 15 in 60 s |
-| `MessageFlood` | Total messages ≥ 150 in 60 s |
+| `RepeatedMessage` | Одно сообщение ≥ 15 раз за 60 с |
+| `ErrorSpike` | ERROR/CRITICAL ≥ 15 за 60 с |
+| `MessageFlood` | Всего сообщений ≥ 150 за 60 с |
 
 ---
 
-## Running tests
+## Запуск тестов
 
 ```bash
 cargo test
-cargo test -- --nocapture          # with stdout
-RUST_LOG=debug cargo test -- --nocapture  # with debug logs
-cargo test statistics              # single module
+cargo test -- --nocapture                    # с выводом stdout
+RUST_LOG=debug cargo test -- --nocapture     # с отладочными логами
+cargo test statistics                        # один модуль
 ```
 
 ---
 
-## Log format
+## Формат лога
 
 ```
-YYYY-MM-DD HH:MM:SS LEVEL Message [key=value ...]
+YYYY-MM-DD HH:MM:SS LEVEL Сообщение [key=value ...]
 ```
 
 ```
@@ -162,4 +231,4 @@ YYYY-MM-DD HH:MM:SS LEVEL Message [key=value ...]
 2024-01-15 10:30:02 WARN  High memory [service=monitor memory=85%]
 ```
 
-Supported levels: `DEBUG` · `INFO` · `WARN` / `WARNING` · `ERROR` · `CRITICAL`
+Поддерживаемые уровни: `DEBUG` · `INFO` · `WARN` / `WARNING` · `ERROR` · `CRITICAL`
