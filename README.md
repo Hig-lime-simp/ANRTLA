@@ -17,11 +17,13 @@ Real-time streaming log analysis CLI written in Rust.
 ```bash
 cargo build --release
 
+# Create log file
+
 # Analyze a file
-cargo run -- logs/test.log
+cargo run -- test.log
 
 # With config and filter
-cargo run -- -c test_config.json --filter "level=ERROR" logs/test.log
+cargo run -- -c test_config.json --filter "level=ERROR" test.log
 
 # Resume a saved session
 cargo run -- -s my_session
