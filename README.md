@@ -1,4 +1,4 @@
-# Actually New REal Time Log Analyzer
+# Actually New Real Time Log Analyzer
 
 Real-time streaming log analysis CLI written in Rust.
 
