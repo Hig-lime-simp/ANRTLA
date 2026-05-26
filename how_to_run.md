@@ -139,22 +139,6 @@ Anomaly thresholds in `comprehensive_config.json`: `anomaly_threshold = 15`, win
 
 ---
 
-## Test scenarios (static files)
-
-| File | Content |
-|---|---|
-| `logs/test_scenarios/repeated_errors.log` | 20× same ERROR — triggers RepeatedMessage + ErrorSpike |
-| `logs/test_scenarios/error_spike.log` | Many errors in burst |
-| `logs/test_scenarios/multi_source.log` | Logs from auth, db, api, cache, monitor |
-| `logs/test_scenarios/normal_operation.log` | Normal mixed-level traffic |
-
-```bash
-# Run with extended config
-cargo run -- -c logs/test_scenarios/comprehensive_config.json logs/test_scenarios/repeated_errors.log
-```
-
----
-
 ## Running tests
 
 ```bash
