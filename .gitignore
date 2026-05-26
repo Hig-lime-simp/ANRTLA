@@ -1,0 +1,43 @@
+# Rust build artifacts
+/target/
+
+# Dependency lockfile (keep if library, ignore if binary crate — adjust as needed)
+# Cargo.lock
+
+# Logs
+/logs/
+
+# Generated reports
+/reports/
+
+# Documentation (generated/extracted)
+/doc/
+ТЗ.md
+*.pdf
+
+# Test configs
+test_config/
+test_config*/
+**/test_config/
+
+# Claude config
+CLAUDE.md
+.claude/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Environment / secrets
+.env
+.env.*
+!.env.example

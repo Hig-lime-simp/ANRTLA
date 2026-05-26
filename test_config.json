@@ -1,0 +1,40 @@
+{
+    "rules": [
+        {
+            "name": "error_detector",
+            "pattern": "ERROR|CRITICAL",
+            "action": "warn",
+            "severity": "error",
+            "enabled": true
+        },
+        {
+            "name": "warning_detector",
+            "pattern": "WARNING|WARN",
+            "action": "count",
+            "severity": "warning",
+            "enabled": true
+        },
+        {
+            "name": "connection_issues",
+            "pattern": "connection|connect|timeout",
+            "action": "report",
+            "severity": "warning",
+            "enabled": true,
+            "threshold": 5,
+            "time_window": 60
+        },
+        {
+            "name": "auth_events",
+            "pattern": "login|logout|auth",
+            "action": "count",
+            "severity": "info",
+            "enabled": true
+        }
+    ],
+    "settings": {
+        "buffer_size": 2048,
+        "output_format": "text",
+        "workers": 4,
+        "anomaly_threshold": 20
+    }
+}

@@ -1,0 +1,47 @@
+[package]
+name = "log_analyzer"
+version = "1.0.0"
+edition = "2021"
+
+# Блок зависимостей для консольного CLI приложения
+[dependencies]
+# Async runtime для многопоточности
+tokio = { version = "1", features = ["full"] }
+
+# Serialization для config файлов
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+toml = "0.8"
+
+# Log parsing
+regex = "1"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Multi-threading и каналы для передачи данных
+crossbeam-channel = "0.5"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# File watching для потокового чтения
+notify = "7"
+
+# UUID для управления сессиями
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+# Directory utilities
+dirs = "5"
+
+# Для цветного вывода в консоль
+colored = "2"
+
+# Убрали ratatui и crossterm так как переходим на纯 консольный интерфейс
